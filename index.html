@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+       <title>我的第一个智能网页</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #apiResult {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>你好，叶博海！</h1>
+    <h1>这是我的第二个段落</h1>
+    <p>这是我的第一个网页。</p>
+    <img src="14.jpg" style="width: 300px;">
+    <a href="https://www.baidu.com">点击去百度</a>
+ <hr>
+    <h2>🤖 AI 聊天测试</h2>
+    <input type="password" id="apiKeyInput" placeholder="请输入你的 DeepSeek API Key" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+    <button id="callApiBtn">点我，让 AI 说一句话</button>
+    <div id="apiResult">（AI 的回答会显示在这里）</div>
+
+    <script>
+    
+        // 2. 获取按钮和显示区域
+        const btn = document.getElementById('callApiBtn');
+        const resultDiv = document.getElementById('apiResult');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+
+
+        // 3. 按钮点击事件
+        btn.addEventListener('click', async function() {
+               const apiKey = apiKeyInput.value.trim();
+            
+            if (!apiKey) {
+                resultDiv.innerHTML = '❌ 请先输入你的 DeepSeek API Key！';
+                return;
+            }
+            resultDiv.innerHTML = '🤔 AI 正在思考中...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/proxy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'user', content: '这个网站的第一个使用者会是我女朋友，假装你等她等了很久了，然后再帮我夸一夸她，越臭美越好' }
+                        ]
+                    })
+                });
+                
+                 const data = await response.json();  // 先解析
+
+if (!response.ok) {                   // 再检查
+    throw new Error(data.error || '请求失败');
+}
+                
+                resultDiv.innerHTML = `💬 AI 说：${data.reply}`;
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 调用失败：${error.message}`;
+            }
+        });
+    </script>
+
+</body>
+</html>
