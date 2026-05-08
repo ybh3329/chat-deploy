@@ -1,8 +1,7 @@
-toml
-[build]
-  publish = "."
+[bulid]
+publish = "."
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/proxy"
-  status = 200
+from = "/api/*"
+to = "/.netlify/functions/proxy"
+status = 200
