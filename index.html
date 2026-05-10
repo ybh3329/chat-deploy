@@ -131,13 +131,6 @@
         
         // 页面加载时显示历史记录
         loadHistory();
-        // 临时测试：直接调用图片识别（不经过聊天框）
-async function testImageRecognition() {
-    const apiKey = apiKeyInput.value.trim();
-    if (!apiKey) {
-        alert('请先输入API Key');
-        return;
-    }
     
     // 使用一张网络上的金鱼图片（临时测试）
     const testImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Goldfish_3.jpg/800px-Goldfish_3.jpg';
@@ -166,8 +159,6 @@ async function testImageRecognition() {
     reader.readAsDataURL(blob);
 }
 
-// 在控制台暴露这个函数，方便测试
-window.testImageRecognition = testImageRecognition;
         
         // 发送消息函数
                // 发送消息函数（支持文字+图片）
@@ -223,7 +214,6 @@ window.testImageRecognition = testImageRecognition;
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify(requestBody)
                 });
