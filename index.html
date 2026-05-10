@@ -131,33 +131,6 @@
         
         // 页面加载时显示历史记录
         loadHistory();
-    
-    // 使用一张网络上的金鱼图片（临时测试）
-    const testImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Goldfish_3.jpg/800px-Goldfish_3.jpg';
-    
-    // 把网络图片转成 base64
-    const response = await fetch(testImageUrl);
-    const blob = await response.blob();
-    const reader = new FileReader();
-    reader.onloadend = async function() {
-        const base64 = reader.result;
-        
-        const result = await fetch('/.netlify/functions/proxy', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                imageBase64: base64
-            })
-        });
-        
-        const data = await result.json();
-        alert('识别结果：' + data.reply);
-    };
-    reader.readAsDataURL(blob);
-}
 
         
         // 发送消息函数
