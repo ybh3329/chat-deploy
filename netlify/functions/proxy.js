@@ -105,6 +105,29 @@ exports.handler = async (event) => {
 
         let data = await response.json();
         let assistantMessage = data.choices[0].message;
+         if (assistantMessage.content && assistantMessage.content.includes('<|DSML|>')) {
+            const dsmlContent = assistantMessage.content;
+            
+            // 提取工具名称
+            const toolNameMatch = dsmlContent.match(/invoke name="([^"]+)"/);
+            // 提取 query 参数（针对 web_search）
+            const queryMatch = dsmlContent.match(/parameter name="query" string="true">([^<]+)/);
+            
+            if (toolNameMatch && queryMatch) {
+                const toolName = toolNameMatch[1];
+                const query = queryMatch[1].trim();
+                
+                // 构造标准的 tool_calls 对象
+                assistantMessage.tool_calls = [{
+                    id: 'dsml_' + Date.now(),
+                    function: {
+                        name: toolName,
+                        arguments: JSON.stringify({ query: query })
+                    }
+                }];
+            }
+        }
+        // ========== DSML 解析结束 ==========
 
         // 3. 如果模型决定调用工具
         if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
@@ -192,7 +215,7 @@ exports.handler = async (event) => {
         const cleanReply = reply.replace(/\*\*/g, '');
         return {
             statusCode: 200,
-            body: JSON.stringify({ reply: reply })
+            body: JSON.stringify({ reply: cleanreply })
         };
 
     } catch (error) {
