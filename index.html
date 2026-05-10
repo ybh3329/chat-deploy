@@ -8,6 +8,9 @@
             max-width: 600px;
             margin: 50px auto;
             padding: 20px;
+            font-family: 'Comic Sans MS', cursive;
+    background: #e0e0e0;  /* 灰色背景 */
+    border-radius: 20px;   /* 圆角（如果body有背景才明显） */
         }
         button {
             background-color: #007bff;
@@ -16,9 +19,11 @@
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
+            transition: 0.2s;
         }
         button:hover {
             background-color: #0056b3;
+            transform: scale(0.97);
         }
         #apiResult {
             margin-top: 20px;
@@ -31,14 +36,36 @@
 <body>
     <h1>你好，HJL！</h1>
     <h1>我成功啦！</h1>
-    <p>这是我的第一个网页，欢迎光临。</p>
+    <p>这是我的第一个网页，欢迎光临！</p>
     <img src="14.jpg" style="width: 300px;">
     <a href="https://www.baidu.com">点击去百度</a>
  <hr>
     <h2>🤖 AI 聊天测试</h2>
-    <input type="password" id="apiKeyInput" placeholder="请输入你的 DeepSeek API Key" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+    <input type="password" id="apiKeyInput" placeholder="请输入你的 DeepSeek API Key" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 25px !important;
+    border: none;">
     <button id="callApiBtn">点我，让 AI 说一句话</button>
-    <div id="apiResult">（AI 的回答会显示在这里）</div>
+<div id="chatHistory" style="border:1px solid #ddd;
+    padding:15px;
+    min-height:300px;
+    max-height:400px;
+    overflow-y:auto;
+    margin-bottom:10px;
+    background:#f0f2f5;
+    border-radius:10px;">
+    <!-- 所有聊天记录会显示在这里 -->
+</div>
+<div style="display: flex; gap: 10px;">
+    <input type="text" id="userInput" placeholder="输入你的问题..." style="flex:1; padding:8px;border-radius: 25px !important;">
+    <button id="sendBtn">发送消息</button>
+        <button id="clearBtn" style="background-color:#dc3545;">清空记录</button>
+            <button id="uploadBtn" style="background-color:#28a745;">📷 上传金鱼图片</button>
+</div>
+<!-- 图片预览区（一开始隐藏） -->
+<div id="imagePreview" style="display: none; margin-top: 10px;">
+    <img id="previewImg" style="max-width: 100%; max-height: 200px; border-radius: 10px;">
+    <p style="font-size: 12px;">✅ 已选中图片，点击“发送消息”后AI会识别</p>
+</div>
+<div id="apiResult" style="display:none;"></div>
 
     <script>
     
@@ -46,43 +73,245 @@
         const btn = document.getElementById('callApiBtn');
         const resultDiv = document.getElementById('apiResult');
         const apiKeyInput = document.getElementById('apiKeyInput');
-
-
-        // 3. 按钮点击事件
-        btn.addEventListener('click', async function() {
-               const apiKey = apiKeyInput.value.trim();
+                // ---------- 新增：记忆功能核心代码 ----------
+        let messages = [];  // 存储所有对话
+        
+        // 从浏览器本地存储读取历史记录
+        function loadHistory() {
+            const saved = localStorage.getItem('chat_messages');
+            if (saved) {
+                messages = JSON.parse(saved);
+                displayMessages();
+            }
+        }
+        
+        // 保存到浏览器本地存储
+        function saveHistory() {
+            localStorage.setItem('chat_messages', JSON.stringify(messages));
+        }
+        
+        // 显示所有消息
+        function displayMessages() {
+            const chatDiv = document.getElementById('chatHistory');
+            if (!chatDiv) return;
             
-            if (!apiKey) {
-                resultDiv.innerHTML = '❌ 请先输入你的 DeepSeek API Key！';
+            if (messages.length === 0) {
+                chatDiv.innerHTML = '<div style="color:#999;">✨ 暂无消息，发送第一条吧~</div>';
                 return;
             }
-            resultDiv.innerHTML = '🤔 AI 正在思考中...';
+            
+            chatDiv.innerHTML = messages.map(msg => {
+    const isUser = msg.role === 'user';
+    const align = isUser ? 'right' : 'left';
+    const bgColor = isUser ? '#007bff' : '#e9ecef';
+    const textColor = isUser ? 'white' : 'black';
+    
+    return `
+        <div style="text-align: ${align}; margin: 10px 0;">
+            <div style="display: inline-block; max-width: 70%; background: ${bgColor}; color: ${textColor}; padding: 10px 15px; border-radius: 15px; word-wrap: break-word;">
+                <strong>${isUser ? '你' : 'AI'}:</strong> ${msg.content}
+            </div>
+        </div>
+    `;
+}).join('');
+            
+            // 自动滚动到底部
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        }
+        
+        // 添加一条消息
+        function addMessage(role, content) {
+            messages.push({ role, content });
+            saveHistory();
+            displayMessages();
+        }
+        // ---------- 记忆功能代码结束 ----------
+
+
+        // 新代码：获取输入框和发送按钮
+        const sendBtn = document.getElementById('sendBtn');
+        const userInput = document.getElementById('userInput');
+        
+        // 页面加载时显示历史记录
+        loadHistory();
+        // 临时测试：直接调用图片识别（不经过聊天框）
+async function testImageRecognition() {
+    const apiKey = apiKeyInput.value.trim();
+    if (!apiKey) {
+        alert('请先输入API Key');
+        return;
+    }
+    
+    // 使用一张网络上的金鱼图片（临时测试）
+    const testImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Goldfish_3.jpg/800px-Goldfish_3.jpg';
+    
+    // 把网络图片转成 base64
+    const response = await fetch(testImageUrl);
+    const blob = await response.blob();
+    const reader = new FileReader();
+    reader.onloadend = async function() {
+        const base64 = reader.result;
+        
+        const result = await fetch('/.netlify/functions/proxy', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                imageBase64: base64
+            })
+        });
+        
+        const data = await result.json();
+        alert('识别结果：' + data.reply);
+    };
+    reader.readAsDataURL(blob);
+}
+
+// 在控制台暴露这个函数，方便测试
+window.testImageRecognition = testImageRecognition;
+        
+        // 发送消息函数
+               // 发送消息函数（支持文字+图片）
+        async function sendMessage() {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                alert('请先输入 DeepSeek API Key');
+                return;
+            }
+            
+            const userMsg = userInput.value.trim();
+            if (!userMsg && !currentImageFile) {
+                alert('请输入消息内容或上传图片');
+                return;
+            }
+            
+            // 显示用户的消息（文字+图片提示）
+            let displayContent = userMsg || '（图片消息）';
+            if (currentImageFile) {
+                displayContent = '📷 [图片] ' + (userMsg || '请描述这张图片');
+            }
+            addMessage('user', displayContent);
+            
+            // 清空输入框和图片预览
+            userInput.value = '';
+            if (currentImageFile) {
+                imagePreview.style.display = 'none';
+                currentImageFile = null;
+            }
+            
+            // 显示"思考中"
+            addMessage('assistant', '🤔 思考中...');
             
             try {
+                // 准备对话历史（最近10条）
+                const historyForAI = messages.slice(-10).filter(m => m.content !== '🤔 思考中...');
+                
+                // 准备请求体
+                let requestBody = {
+                    messages: historyForAI.map(m => ({
+                        role: m.role,
+                        content: m.content
+                    }))
+                };
+                
+                // 如果有图片，把图片转成 base64 并加上
+                if (currentImageFile) {
+                    const reader = new FileReader();
+                    // 注意：这里需要用 Promise 包装，因为 FileReader 是异步的
+                    const base64 = await new Promise((resolve, reject) => {
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(currentImageFile);
+                    });
+                    requestBody.imageBase64 = base64;
+                }
+                
                 const response = await fetch('/.netlify/functions/proxy', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${apiKey}`
                     },
-                    body: JSON.stringify({
-                        messages: [
-                            { role: 'user', content: '这个网站的第一个使用者会是我女朋友，假装你等她等了很久了，然后再帮我夸一夸她，越臭美越好' }
-                        ]
-                    })
+                    body: JSON.stringify(requestBody)
                 });
                 
-                 const data = await response.json();  // 先解析
-
-if (!response.ok) {                   // 再检查
-    throw new Error(data.error || '请求失败');
-}
+                const data = await response.json();
                 
-                resultDiv.innerHTML = `💬 AI 说：${data.reply}`;
+                if (!response.ok) {
+                    throw new Error(data.error || '请求失败');
+                }
+                
+                // 移除"思考中"消息
+                messages = messages.filter(m => m.content !== '🤔 思考中...');
+                // 添加真正的AI回复
+                addMessage('assistant', data.reply);
+                
             } catch (error) {
-                resultDiv.innerHTML = `❌ 调用失败：${error.message}`;
+                messages = messages.filter(m => m.content !== '🤔 思考中...');
+                addMessage('assistant', `❌ 出错：${error.message}`);
+            }
+        }
+        // ---------- 金鱼图片识别：上传+预览 ----------
+const uploadBtn = document.getElementById('uploadBtn');
+const imagePreview = document.getElementById('imagePreview');
+const previewImg = document.getElementById('previewImg');
+let currentImageFile = null;   // 保存用户上传的图片文件
+
+// 创建一个隐藏的 <input type="file">
+const fileInput = document.createElement('input');
+fileInput.type = 'file';
+fileInput.accept = 'image/*';
+fileInput.style.display = 'none';
+document.body.appendChild(fileInput);
+
+// 点击绿色按钮 → 触发文件选择
+uploadBtn.addEventListener('click', () => {
+    fileInput.click();
+});
+
+// 当用户选择了图片
+fileInput.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        currentImageFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            imagePreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        currentImageFile = null;
+        imagePreview.style.display = 'none';
+    }
+});
+        
+        // 绑定发送按钮事件
+                // 清空聊天记录的函数
+        function clearChatHistory() {
+            if (confirm('确定要清空所有聊天记录吗？')) {
+                messages = [];  // 清空内存中的记录
+                saveHistory();   // 清空本地存储
+                displayMessages(); // 刷新显示
+            }
+        }
+        
+        // 绑定清空按钮事件
+        const clearBtn = document.getElementById('clearBtn');
+        clearBtn.addEventListener('click', clearChatHistory);
+        sendBtn.addEventListener('click', sendMessage);
+        
+        // 按回车键也可以发送
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
             }
         });
+        
+        // 隐藏旧的按钮（可选）
+        btn.style.display = 'none';
     </script>
 
 </body>
