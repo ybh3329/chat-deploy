@@ -174,6 +174,10 @@ exports.handler = async (event) => {
                     console.log("📥 收到响应，状态码:", searchResponse.status);
                     const searchData = await searchResponse.json();
                     console.log("📄 搜索结果:", JSON.stringify(searchData).substring(0, 200));
+                    if (searchData.error) {
+    console.log("❌ API 返回错误:", searchData.error);
+    toolResult = `搜索失败：${searchData.error.message}`;
+} else {
                     const results = searchData.results || [];
                     if (results.length > 0) {
                         toolResult = `搜索“${query}”的结果：\n` + 
@@ -181,6 +185,7 @@ exports.handler = async (event) => {
                     } else {
                         toolResult = `未找到关于“${query}”的搜索结果`;
                     }
+}
                 } catch (error) {
                     console.log("❌ 搜索失败:", error.message);
                     toolResult = `搜索失败：${error.message}`;
