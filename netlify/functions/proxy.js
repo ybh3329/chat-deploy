@@ -43,6 +43,7 @@ exports.handler = async (event) => {
 
             const data = await response.json();
             const reply = data.choices?.[0]?.message?.content || '抱歉，我无法识别这张图片。';
+            const cleanReply = reply.replace(/\*\*/g, '');
             return {
                 statusCode: 200,
                 body: JSON.stringify({ reply: reply })
@@ -67,6 +68,20 @@ exports.handler = async (event) => {
                             }
                         },
                         required: ["city"]
+                    }
+                }
+            },
+        {
+            type: "function",
+                function: {
+                    name: "web_search",
+                    description: "搜索互联网获取最新信息。当用户需要查询新闻、实时数据、最新事件、或者你的知识无法覆盖的内容时，使用此工具。",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            query: { type: "string", description: "搜索关键词" }
+                        },
+                        required: ["query"]
                     }
                 }
             }
@@ -112,6 +127,32 @@ exports.handler = async (event) => {
                     toolResult = `获取${city}天气失败：${error.message}`;
                 }
             }
+            else if (toolName === "web_search") {
+                const query = toolArgs.query;
+                try {
+                    const searchResponse = await fetch('https://open.feedcoopapi.com/agent_api/agent/chat/completion', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${process.env.VOLC_SEARCH_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            max_results: 5
+                        })
+                    });
+                    const searchData = await searchResponse.json();
+                    const results = searchData.results || [];
+                    if (results.length > 0) {
+                        toolResult = `搜索“${query}”的结果：\n` + 
+                            results.map((r, i) => `${i+1}. ${r.title}\n   ${r.snippet}\n   来源：${r.url}`).join('\n\n');
+                    } else {
+                        toolResult = `未找到关于“${query}”的搜索结果`;
+                    }
+                } catch (error) {
+                    toolResult = `搜索失败：${error.message}`;
+                }
+            }
             
             // 4. 把工具结果发回给模型
             const secondMessages = [
@@ -139,14 +180,16 @@ exports.handler = async (event) => {
             
             data = await response.json();
             const finalReply = data.choices[0].message.content;
+            const cleanReply = finalReply.replace(/\*\*/g, '');
             return {
                 statusCode: 200,
-                body: JSON.stringify({ reply: finalReply })
+                body: JSON.stringify({ reply: cleanReply })
             };
         }
         
         // 5. 没有工具调用，直接返回
         const reply = assistantMessage.content || "抱歉，我无法回答。";
+        const cleanReply = reply.replace(/\*\*/g, '');
         return {
             statusCode: 200,
             body: JSON.stringify({ reply: reply })
