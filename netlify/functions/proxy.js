@@ -106,7 +106,9 @@ exports.handler = async (event) => {
         let data = await response.json();
         let assistantMessage = data.choices[0].message;
          if (assistantMessage.content && assistantMessage.content.includes('<|DSML|>')) {
+            console.log("✅ 检测到 DSML 格式");
             const dsmlContent = assistantMessage.content;
+            console.log("原始内容:", dsmlContent);
             
             // 提取工具名称
             const toolNameMatch = dsmlContent.match(/invoke name="([^"]+)"/);
@@ -114,6 +116,7 @@ exports.handler = async (event) => {
             const queryMatch = dsmlContent.match(/parameter name="query" string="true">([^<]+)/);
             
             if (toolNameMatch && queryMatch) {
+                  console.log("✅ 解析成功，工具:", toolNameMatch[1], "查询词:", queryMatch[1]);
                 const toolName = toolNameMatch[1];
                 const query = queryMatch[1].trim();
                 
@@ -125,8 +128,10 @@ exports.handler = async (event) => {
                         arguments: JSON.stringify({ query: query })
                     }
                 }];
-            }
-        }
+            }else {
+        console.log("❌ 解析失败，未匹配到工具名或参数");
+    }
+}
         // ========== DSML 解析结束 ==========
 
         // 3. 如果模型决定调用工具
@@ -152,7 +157,9 @@ exports.handler = async (event) => {
             }
             else if (toolName === "web_search") {
                 const query = toolArgs.query;
+                console.log("🔍 开始执行 web_search，查询词:", query);
                 try {
+                    console.log("📡 调用火山引擎 API...");
                     const searchResponse = await fetch('https://open.feedcoopapi.com/agent_api/agent/chat/completion', {
                         method: 'POST',
                         headers: {
@@ -164,7 +171,9 @@ exports.handler = async (event) => {
                             max_results: 5
                         })
                     });
+                    console.log("📥 收到响应，状态码:", searchResponse.status);
                     const searchData = await searchResponse.json();
+                    console.log("📄 搜索结果:", JSON.stringify(searchData).substring(0, 200));
                     const results = searchData.results || [];
                     if (results.length > 0) {
                         toolResult = `搜索“${query}”的结果：\n` + 
@@ -173,6 +182,7 @@ exports.handler = async (event) => {
                         toolResult = `未找到关于“${query}”的搜索结果`;
                     }
                 } catch (error) {
+                    console.log("❌ 搜索失败:", error.message);
                     toolResult = `搜索失败：${error.message}`;
                 }
             }
@@ -215,7 +225,7 @@ exports.handler = async (event) => {
         const cleanReply = reply.replace(/\*\*/g, '');
         return {
             statusCode: 200,
-            body: JSON.stringify({ reply: cleanreply })
+            body: JSON.stringify({ reply: cleanReply })
         };
 
     } catch (error) {
