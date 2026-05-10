@@ -41,8 +41,6 @@
     <a href="https://www.baidu.com">点击去百度</a>
  <hr>
     <h2>🤖 AI 聊天测试</h2>
-    <input type="password" id="apiKeyInput" placeholder="请输入你的 DeepSeek API Key" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 25px !important;
-    border: none;">
     <button id="callApiBtn">点我，让 AI 说一句话</button>
 <div id="chatHistory" style="border:1px solid #ddd;
     padding:15px;
@@ -72,7 +70,6 @@
         // 2. 获取按钮和显示区域
         const btn = document.getElementById('callApiBtn');
         const resultDiv = document.getElementById('apiResult');
-        const apiKeyInput = document.getElementById('apiKeyInput');
                 // ---------- 新增：记忆功能核心代码 ----------
         let messages = [];  // 存储所有对话
         
@@ -174,13 +171,7 @@ window.testImageRecognition = testImageRecognition;
         
         // 发送消息函数
                // 发送消息函数（支持文字+图片）
-        async function sendMessage() {
-            const apiKey = apiKeyInput.value.trim();
-            if (!apiKey) {
-                alert('请先输入 DeepSeek API Key');
-                return;
-            }
-            
+        async function sendMessage() {        
             const userMsg = userInput.value.trim();
             if (!userMsg && !currentImageFile) {
                 alert('请输入消息内容或上传图片');

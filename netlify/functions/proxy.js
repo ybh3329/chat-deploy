@@ -11,7 +11,7 @@ exports.handler = async (event) => {
         const body = JSON.parse(event.body);
         const { messages, imageBase64 } = body;  // ← 新增 imageBase64
         
-        const apiKey = event.headers.authorization?.replace('Bearer ', '');
+        const apiKey = process.env.DEEPSEEK_API_KEY;
         if (!apiKey) {
             return { statusCode: 400, body: JSON.stringify({ error: 'Missing API Key' }) };
         }
