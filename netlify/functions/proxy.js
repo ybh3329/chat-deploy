@@ -173,14 +173,15 @@ exports.handler = async (event) => {
             input: [{ role: "user", content: [{ type: "input_text", text: query }]
                         }]})
                     });
-                    console.log("📥 收到响应，状态码:", searchResponse.status);
+                    console.log("📥 收到响应，状态码:", response.status);
                     const data = await response.json();
-                    console.log("📄 搜索结果:", JSON.stringify(searchData).substring(0, 200));
-                    if (searchData.error) {
-    console.log("❌ API 返回错误:", searchData.error);
-    toolResult = `搜索失败：${searchData.error.message}`;
+                    console.log("📄 搜索结果:", JSON.stringify(data).substring(0, 200));
+                    console.log("📋 完整返回结构:", JSON.stringify(data, null, 2));
+                    if (data.error) {
+    console.log("❌ API 返回错误:", data.error);
+    toolResult = `搜索失败：${data.error.message}`;
 } else {
-                    const results = searchData.results || [];
+                    const results = data.results || [];
                     if (results.length > 0) {
                         toolResult = `搜索“${query}”的结果：\n` + 
                             results.map((r, i) => `${i+1}. ${r.title}\n   ${r.snippet}\n   来源：${r.url}`).join('\n\n');
