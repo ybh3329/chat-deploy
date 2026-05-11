@@ -158,21 +158,23 @@ exports.handler = async (event) => {
             else if (toolName === "web_search") {
                 const query = toolArgs.query;
                 console.log("🔍 开始执行 web_search，查询词:", query);
+                const arkApiKey = process.env.ARK_API_KEY;  // 你的火山引擎API Key
                 try {
                     console.log("📡 调用火山引擎 API...");
-                    const searchResponse = await fetch('https://open.feedcoopapi.com/agent_api/agent/chat/completion', {
+                    const response = await fetch('https://ark.cn-beijing.volces.com/api/v3/responses', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${process.env.VOLC_SEARCH_API_KEY}`
+            'Authorization': `Bearer ${arkApiKey}`
                         },
                         body: JSON.stringify({
-                            query: query,
-                            max_results: 5
-                        })
+                           model: "ep-20260511082217-cnz7t",  // 你的推理端点ID
+            tools: [{ type: "web_search", max_keyword: 3 }],
+            input: [{ role: "user", content: [{ type: "input_text", text: query }]
+                        }]})
                     });
                     console.log("📥 收到响应，状态码:", searchResponse.status);
-                    const searchData = await searchResponse.json();
+                    const data = await response.json();
                     console.log("📄 搜索结果:", JSON.stringify(searchData).substring(0, 200));
                     if (searchData.error) {
     console.log("❌ API 返回错误:", searchData.error);
